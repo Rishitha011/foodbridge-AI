@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodBridge AI - Surplus Redistribution Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- Header -->
+    <header class="bg-emerald-600 text-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🌾 FoodBridge AI</h1>
+            <p class="text-sm bg-emerald-700 px-3 py-1 rounded-full">Nebius x NVIDIA Global AI Hackathon</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Add Surplus Form -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <h2 class="text-xl font-semibold mb-4 text-emerald-700">📦 Register Surplus Food</h2>
+            <form id="surplusForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Donor Name</label>
+                    <input type="text" id="donorName" required class="w-full mt-1 p-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Fresh Bakery">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Food Item & Description</label>
+                    <input type="text" id="foodItem" required class="w-full mt-1 p-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Bread & Pastries">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Quantity (kg)</label>
+                    <input type="number" id="quantity" required class="w-full mt-1 p-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 20">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">Submit & Match AI</button>
+            </form>
+        </div>
+
+        <!-- Live Matches Display -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <h2 class="text-xl font-semibold mb-4 text-emerald-700">⚡ Real-Time AI Matches</h2>
+            <button onclick="fetchMatches()" class="mb-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 transition">Refresh Matches</button>
+            <div id="matchResults" class="space-y-3">
+                <p class="text-gray-500 text-sm">Click "Refresh Matches" or add surplus to see AI allocation results.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const API_URL = "http://localhost:5000";
+
+        document.getElementById('surplusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                donorName: document.getElementById('donorName').value,
+                foodItem: document.getElementById('foodItem').value,
+                quantity: parseFloat(document.getElementById('quantity').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/surplus`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                alert(result.message);
+                document.getElementById('surplusForm').reset();
+                fetchMatches();
+            } catch (err) {
+                console.error("Error connecting to backend:", err);
+                alert("Failed to connect to backend server.");
+            }
+        });
+
+        async function fetchMatches() {
+            try {
+                const response = await fetch(`${API_URL}/api/match`, { method: 'POST' });
+                const data = await response.json();
+                const container = document.getElementById('matchResults');
+                container.innerHTML = '';
+
+                data.matches.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = "p-4 bg-emerald-50 border border-emerald-100 rounded-lg";
+                    card.innerHTML = `
+                        <p class="font-bold text-emerald-900">${match.donor_name} (${match.quantity_kg} kg of ${match.item})</p>
+                        <p class="text-sm text-gray-600 mt-1">Matched Shelter: <span class="font-semibold text-emerald-700">${match.matched_organization}</span></p>
+                        <span class="inline-block mt-2 px-2 py-1 bg-emerald-200 text-emerald-800 text-xs rounded-full font-medium">${match.status}</span>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Error fetching matches:", err);
+            }
+        }
+    </script>
+</body>
+</html>
